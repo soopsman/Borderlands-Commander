@@ -262,3 +262,13 @@ class _CustomEditorError(UserFeedback.TrainingBox):
 
     def OnExit(self) -> None:
         _CustomEditorCommand(self._custom_command_name, self._custom_command)
+
+class _CustomSavePositionName(UserFeedback.TextInputBox):
+    def __init__(self, old_name):
+        super().__init__(Title=f"Enter new Nickname for '{old_name}'", DefaultMessage="")
+        self._old_custom_command_name = old_name
+        self.Show()
+
+    def OnSubmit(self, new_name: str) -> None:
+        if new_name != self._old_custom_command_name:
+            Builtin._NamePosition(new_name)

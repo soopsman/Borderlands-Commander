@@ -3,12 +3,11 @@ from unrealsdk import GetEngine, FindObject, CallPostEdit #type: ignore
 
 from Mods import ModMenu #type: ignore
 
-from . import Commander
+from . import Commander, Configurator
 
 from typing import Sequence
 import math
 from fractions import Fraction
-
 
 Positions: ModMenu.Options.Hidden = ModMenu.Options.Hidden(
     Caption="Positions",
@@ -17,6 +16,12 @@ Positions: ModMenu.Options.Hidden = ModMenu.Options.Hidden(
 DamageNumbers: ModMenu.Options.Hidden = ModMenu.Options.Hidden(
     Caption="DamageNumbers",
     StartingValue=True
+)
+MaxSavePositions: ModMenu.Options.Spinner = ModMenu.Options.Spinner(
+    Caption="Max Save Positions",
+    Description="The number of save positions .",
+    Choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+    StartingValue="3"
 )
 ClientTeleporting: ModMenu.Options.Spinner = ModMenu.Options.Spinner(
     Caption="Client Teleporting",
@@ -32,7 +37,7 @@ ClientSpeedPermissions: ModMenu.Options.Boolean = ModMenu.Options.Boolean(
 
 
 Options: Sequence[ModMenu.Options.Base] = (
-    Positions, DamageNumbers, ClientTeleporting, ClientSpeedPermissions
+    Positions, DamageNumbers, MaxSavePositions, ClientTeleporting, ClientSpeedPermissions
 )
 
 def PC():
@@ -132,13 +137,17 @@ _Position = 0
 
 def _SelectPosition():
     global _Position
-    if   _Position == 0:
-         _Position =  1
-    elif _Position == 1:
-         _Position =  2
-    elif _Position == 2:
-         _Position =  0
-    Popup(f"Selected Position {_Position + 1}")
+    _Position = _Position + 1
+    if _Position >= int(MaxSavePositions.CurrentValue):
+        _Position = 0
+
+    mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
+
+    position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
+    name = f"{_Position + 1}"
+    if position != None and hasattr(position, "Name"):
+        name = position["Name"]
+    Popup(f"Selected Position {name}")
 
 
 def _GetPosition(PC):
@@ -167,19 +176,72 @@ def ApplyPosition(PC, position):
 def _SavePosition():
     mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
 
-    positions = Positions.CurrentValue.get(mapName, [None, None, None])
+    positions = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))
+
+    global _Position
+    if _Position >= int(MaxSavePositions.CurrentValue):
+        _Position = 0
+
+    requiresName = positions[_Position] == None or hasattr(positions[_Position], "Name") == False
+
+    if len(positions) != int(MaxSavePositions.CurrentValue):
+        updatePositions = [None] * int(MaxSavePositions.CurrentValue)
+        for i in range(int(MaxSavePositions.CurrentValue)):
+            if len(positions) > i and positions[i] != None:
+                updatePositions[i] = positions[i]
+                if hasattr(positions[i], "Name") == False:
+                    updatePositions[i]["Name"] = f"{i + 1}"
+        positions = updatePositions
+
     positions[_Position] = _GetPosition(PC())
+
+    if requiresName:
+        positions[_Position]["Name"] = f"{_Position + 1}"
 
     Positions.CurrentValue[mapName] = positions
     ModMenu.SaveModSettings(Commander.Instance)
 
-    Popup(f"Saved Position {_Position + 1}")
+    Popup(f"Saved Position {positions[_Position]["Name"]}")
+
+
+def _PromptForName():
+    mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
+
+    global _Position
+    if _Position >= int(MaxSavePositions.CurrentValue):
+        _Position = 0
+
+    position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
+    if position is None or hasattr(position, "Name") == False:
+        Popup(f"Position {_Position + 1} Not Saved")
+    else:
+        Configurator._CustomSavePositionName(position["Name"])
+
+
+def _NamePosition(name):
+    mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
+
+    positions = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))
+
+    if name == "":
+        positions[_Position]["Name"] = f"{_Position + 1}"
+    else:
+        positions[_Position]["Name"] = f"{name} ({_Position + 1})"
+
+    Positions.CurrentValue[mapName] = positions
+    ModMenu.SaveModSettings(Commander.Instance)
+
+    Popup(f"Saved Name {name} ({_Position + 1})")
 
 
 def _RestorePosition():
     mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
 
-    position = Positions.CurrentValue.get(mapName, [None, None, None])[_Position]
+    global _Position
+    if _Position >= int(MaxSavePositions.CurrentValue):
+        _Position = 0
+
+    position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
     if position is None:
         Popup(f"Position {_Position + 1} Not Saved")
 
@@ -188,7 +250,8 @@ def _RestorePosition():
 
     else:
         ApplyPosition(PC(), position)
-        Popup(f"Restored Position {_Position + 1}")
+        name = position["Name"] if hasattr(position, "Name") else f"{_Position + 1}"
+        Popup(f"Restored Position {name}")
 
         if ClientTeleporting.CurrentValue == "With Host":
             for PRI in GetEngine().GetCurrentWorldInfo().GRI.PRIArray:
@@ -234,6 +297,7 @@ Keybinds: Sequence[ModMenu.Keybind] = (
     ModMenu.Keybind("Toggle World Freeze",   "Backslash",    OnPress=_TogglePlayersOnly  ),
     ModMenu.Keybind("Toggle Damage Numbers", "Quote",        OnPress=_ToggleDamageNumbers),
     ModMenu.Keybind("Save Position",         "Period",       OnPress=_SavePosition       ),
+    ModMenu.Keybind("Name Position",         "N",            OnPress=_PromptForName      ),
     ModMenu.Keybind("Restore Position",      "Comma",        OnPress=_RestorePosition    ),
     ModMenu.Keybind("Select Position",       "Slash",        OnPress=_SelectPosition     ),
     ModMenu.Keybind("Teleport Forward",      "Up",           OnPress=_MoveForward        ),
