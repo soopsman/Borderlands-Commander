@@ -19,7 +19,7 @@ DamageNumbers: ModMenu.Options.Hidden = ModMenu.Options.Hidden(
 )
 MaxSavePositions: ModMenu.Options.Spinner = ModMenu.Options.Spinner(
     Caption="Max Save Positions",
-    Description="The number of save positions .",
+    Description="The number of save positions.",
     Choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
     StartingValue="3"
 )
