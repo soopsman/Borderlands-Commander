@@ -145,7 +145,7 @@ def _SelectPosition():
 
     position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
     name = f"{_Position + 1}"
-    if position != None and hasattr(position, "Name"):
+    if position != None and "Name" in position:
         name = position["Name"]
     Popup(f"Selected Position {name}")
 
@@ -182,21 +182,17 @@ def _SavePosition():
     if _Position >= int(MaxSavePositions.CurrentValue):
         _Position = 0
 
-    requiresName = positions[_Position] == None or hasattr(positions[_Position], "Name") == False
-
     if len(positions) != int(MaxSavePositions.CurrentValue):
         updatePositions = [None] * int(MaxSavePositions.CurrentValue)
         for i in range(int(MaxSavePositions.CurrentValue)):
             if len(positions) > i and positions[i] != None:
                 updatePositions[i] = positions[i]
-                if hasattr(positions[i], "Name") == False:
+                if "Name" not in positions[i]:
                     updatePositions[i]["Name"] = f"{i + 1}"
         positions = updatePositions
 
     positions[_Position] = _GetPosition(PC())
-
-    if requiresName:
-        positions[_Position]["Name"] = f"{_Position + 1}"
+    positions[_Position]["Name"] = f"{_Position + 1}"
 
     Positions.CurrentValue[mapName] = positions
     ModMenu.SaveModSettings(Commander.Instance)
@@ -212,10 +208,13 @@ def _PromptForName():
         _Position = 0
 
     position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
-    if position is None or hasattr(position, "Name") == False:
+    if position is None:
         Popup(f"Position {_Position + 1} Not Saved")
     else:
-        Configurator._CustomSavePositionName(position["Name"])
+        if "Name" in position:
+            Configurator._CustomSavePositionName(position["Name"])
+        else:
+            Configurator._CustomSavePositionName(f"{_Position + 1}")
 
 
 def _NamePosition(name):
@@ -250,7 +249,7 @@ def _RestorePosition():
 
     else:
         ApplyPosition(PC(), position)
-        name = position["Name"] if hasattr(position, "Name") else f"{_Position + 1}"
+        name = position["Name"] if "Name" in position else f"{_Position + 1}"
         Popup(f"Restored Position {name}")
 
         if ClientTeleporting.CurrentValue == "With Host":
