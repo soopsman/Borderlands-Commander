@@ -143,8 +143,13 @@ def _SelectPosition():
 
     mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
 
-    position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
     name = f"{_Position + 1}"
+    positions = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue));
+    if len(positions) <= _Position:
+        Popup(f"Selected Position {name}")
+        return
+
+    position = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))[_Position]
     if position != None and "Name" in position:
         name = position["Name"]
     Popup(f"Selected Position {name}")
@@ -187,8 +192,6 @@ def _SavePosition():
         for i in range(int(MaxSavePositions.CurrentValue)):
             if len(positions) > i and positions[i] != None:
                 updatePositions[i] = positions[i]
-                if "Name" not in positions[i]:
-                    updatePositions[i]["Name"] = f"{i + 1}"
         positions = updatePositions
 
     positions[_Position] = _GetPosition(PC())
