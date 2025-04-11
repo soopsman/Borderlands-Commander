@@ -199,6 +199,9 @@ def _DisplayPositions():
     if len(line) > 0:
         popup = f"{popup}\n{line}"
 
+    if len(popup) == 0:
+        popup = "No saved positions"
+
     UserFeedback.TrainingBox(Title="Saved Positions", Message=popup).Show()
 
 
