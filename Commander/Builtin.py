@@ -1,7 +1,7 @@
 import unrealsdk #type: ignore
 from unrealsdk import GetEngine, FindObject, CallPostEdit #type: ignore
 
-from Mods import ModMenu #type: ignore
+from Mods import ModMenu, UserFeedback #type: ignore
 
 from . import Commander, Configurator
 
@@ -180,15 +180,15 @@ def _DisplayPositions():
             if "Name" in positions[i]:
                 name = positions[i]["Name"]
             activePositions.append(name)
-        
+    
     line = ""
     popup = ""
     for name in activePositions:
         if len(line) == 0:
             line = name
         else:
-            if len(f"{line} / {name}") <= 27:
-                line = f"{line} / {name}"
+            if len(f"{line} / {name}") <= 56:
+                line = f"{line}, {name}"
             else:
                 if len(popup) > 0:
                     popup = f"{popup}\n{line}"
@@ -199,7 +199,7 @@ def _DisplayPositions():
     if len(line) > 0:
         popup = f"{popup}\n{line}"
 
-    Popup(popup if len(popup) > 0 else "No saved positions", 5)
+    UserFeedback.TrainingBox(Title="Saved Positions", Message=popup).Show()
 
 
 def _GetPosition(PC):
