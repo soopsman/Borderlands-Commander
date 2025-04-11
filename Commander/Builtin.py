@@ -173,21 +173,26 @@ def _DisplayPositions():
     mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
     positions = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))
 
-    popup = ""
+    activePositions = []
     for i in range(int(MaxSavePositions.CurrentValue)):
-        if len(positions) > i:
-            position = positions[i]
-            if position != None:
-                name = f"Position {i + 1}"
-                if position != None and "Name" in position:
-                    name = position["Name"]
+        if len(positions) > i and positions[i] != None:
+            name = f"Position {i + 1}"
+            if "Name" in positions[i]:
+                name = positions[i]["Name"]
+            activePositions.append(name)
+        
+    popup = ""
+    count = 0
+    for name in activePositions:
+        if count % 2 == 0:
+            popup = f"{popup}\n{name}"
+        else:
+            popup = f"{popup}{name}"
 
-                if i % 3 == 0:
-                    popup = f"{popup}\n{name} / "
-                elif i % 3 == 2:
-                    popup = f"{popup}{name}"
-                else:
-                    popup = f"{popup}{name} / "
+        if count % 2 != 1 and count < len(activePositions) - 1:
+            popup = f"{popup} / "
+        
+        count = count + 1
 
     if popup == "":
         popup = "No saved positions"
@@ -237,12 +242,11 @@ def _SavePosition():
         positions = updatePositions
 
     positions[_Position] = _GetPosition(PC())
-    positions[_Position]["Name"] = f"{_Position + 1}"
 
     Positions.CurrentValue[mapName] = positions
     ModMenu.SaveModSettings(Commander.Instance)
 
-    Popup(f"Saved Position {positions[_Position]["Name"]}")
+    Popup(f"Saved Position {_Position + 1}")
 
 
 def _PromptForName():
@@ -259,7 +263,7 @@ def _PromptForName():
         if "Name" in position:
             Configurator._CustomSavePositionName(position["Name"])
         else:
-            Configurator._CustomSavePositionName(f"{_Position + 1}")
+            Configurator._CustomSavePositionName(f"Position {_Position + 1}")
 
 
 def _NamePosition(name):
