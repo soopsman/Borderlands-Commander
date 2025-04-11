@@ -47,7 +47,7 @@ def _IsClient() -> bool:
     return GetEngine().GetCurrentWorldInfo().NetMode == 3
 
 
-def Popup(message) -> None:
+def Popup(message, seconds = 2.0) -> None:
     """Presents a "training" message to the user with the given string."""
     # Get the graphics object for our player controller's HUD.
     HUDMovie = PC().GetHUDMovie()
@@ -57,7 +57,7 @@ def Popup(message) -> None:
         return
 
     # We will be displaying the message for two *real time* seconds.
-    duration = 2.0 * _DefaultGameInfo.GameSpeed
+    duration = seconds * _DefaultGameInfo.GameSpeed
     # Clear any previous message that may be displayed.
     HUDMovie.ClearTrainingText()
     # Present the training message as per the method's signature:
@@ -135,11 +135,23 @@ def _ToggleDamageNumbers():
 
 _Position = 0
 
-def _SelectPosition():
+
+def _IncrementPosition():
+    _SelectPosition(1)
+
+
+def _DecrementPosition():
+    _SelectPosition(-1)
+
+
+def _SelectPosition(increment: int):
     global _Position
-    _Position = _Position + 1
+    _Position = _Position + increment
     if _Position >= int(MaxSavePositions.CurrentValue):
         _Position = 0
+
+    if _Position < 0:
+        _Position = int(MaxSavePositions.CurrentValue) - 1
 
     mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
 
@@ -153,6 +165,36 @@ def _SelectPosition():
     if position != None and "Name" in position:
         name = position["Name"]
     Popup(f"Selected Position {name}")
+
+
+def _DisplayPositions():
+    global _Position
+
+    mapName = GetEngine().GetCurrentWorldInfo().GetMapName(True)
+    positions = Positions.CurrentValue.get(mapName, [None] * int(MaxSavePositions.CurrentValue))
+
+    popup = ""
+    for i in range(int(MaxSavePositions.CurrentValue)):
+        if len(positions) > i:
+            position = positions[i]
+            if position != None:
+                name = f"Position {i + 1}"
+                if position != None and "Name" in position:
+                    name = position["Name"]
+
+                if i % 3 == 0:
+                    popup = f"{popup}\n{name} / "
+                elif i % 3 == 2:
+                    popup = f"{popup}{name}"
+                else:
+                    popup = f"{popup}{name} / "
+
+    if popup == "":
+        popup = "No saved positions"
+    else:
+        popup = f"Saved Positions:{popup}"
+
+    Popup(popup, 5)
 
 
 def _GetPosition(PC):
@@ -301,7 +343,9 @@ Keybinds: Sequence[ModMenu.Keybind] = (
     ModMenu.Keybind("Save Position",         "Period",       OnPress=_SavePosition       ),
     ModMenu.Keybind("Name Position",         "N",            OnPress=_PromptForName      ),
     ModMenu.Keybind("Restore Position",      "Comma",        OnPress=_RestorePosition    ),
-    ModMenu.Keybind("Select Position",       "Slash",        OnPress=_SelectPosition     ),
+    ModMenu.Keybind("Next Position",         "Slash",        OnPress=_IncrementPosition  ),
+    ModMenu.Keybind("Previous Position",     "BackSpace",    OnPress=_DecrementPosition  ),
+    ModMenu.Keybind("Display Positions",     "P",            OnPress=_DisplayPositions  ),
     ModMenu.Keybind("Teleport Forward",      "Up",           OnPress=_MoveForward        ),
 )
 
