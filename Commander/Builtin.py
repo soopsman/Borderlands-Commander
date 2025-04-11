@@ -181,25 +181,25 @@ def _DisplayPositions():
                 name = positions[i]["Name"]
             activePositions.append(name)
         
+    line = ""
     popup = ""
-    count = 0
     for name in activePositions:
-        if count % 2 == 0:
-            popup = f"{popup}\n{name}"
+        if len(line) == 0:
+            line = name
         else:
-            popup = f"{popup}{name}"
+            if len(f"{line} / {name}") <= 27:
+                line = f"{line} / {name}"
+            else:
+                if len(popup) > 0:
+                    popup = f"{popup}\n{line}"
+                else:
+                    popup = line
+                line = name
+    
+    if len(line) > 0:
+        popup = f"{popup}\n{line}"
 
-        if count % 2 != 1 and count < len(activePositions) - 1:
-            popup = f"{popup} / "
-        
-        count = count + 1
-
-    if popup == "":
-        popup = "No saved positions"
-    else:
-        popup = f"Saved Positions:{popup}"
-
-    Popup(popup, 5)
+    Popup(popup if len(popup) > 0 else "No saved positions", 5)
 
 
 def _GetPosition(PC):
